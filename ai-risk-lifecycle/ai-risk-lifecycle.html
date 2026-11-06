@@ -1,0 +1,416 @@
+<title>AI Risk Lifecycle Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
+
+<style>
+/* Layout: a governance reference. Top = the system under assessment + legends;
+   a matrix of every AI risk category across the NIST GMMM functions; click a
+   risk to open its full ISO 31000 lifecycle (identify → analyse → evaluate →
+   treat → residual). Slate, with trait and rating colour coding. */
+:root{
+  --bg:#0b0f16; --panel:#121823; --panel-2:#0d131d; --raise:#182230;
+  --ink:#e7eef7; --ink-soft:#9fb0c4; --ink-faint:#6d7f94;
+  --line:#1f2a38; --line-strong:#2d3c4f;
+  --govern:#a78bfa; --map:#4f8cff; --measure:#2dd4bf; --manage:#f0a93b;
+  --hi:#f0565a; --med:#f0a93b; --lo:#34d399;
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:light){ :root:not([data-theme="dark"]){
+  --bg:#eef2f7; --panel:#ffffff; --panel-2:#f7f9fc; --raise:#e9eef4;
+  --ink:#14202e; --ink-soft:#49596c; --ink-faint:#7b8a9c;
+  --line:#e2e8f0; --line-strong:#cdd8e4;
+  --govern:#6d44c8; --map:#1d5fd0; --measure:#0d9488; --manage:#b45309;
+  --hi:#c62f33; --med:#b45309; --lo:#0f8a5f;
+  color-scheme:light;
+}}
+:root[data-theme="light"]{
+  --bg:#eef2f7; --panel:#ffffff; --panel-2:#f7f9fc; --raise:#e9eef4;
+  --ink:#14202e; --ink-soft:#49596c; --ink-faint:#7b8a9c;
+  --line:#e2e8f0; --line-strong:#cdd8e4;
+  --govern:#6d44c8; --map:#1d5fd0; --measure:#0d9488; --manage:#b45309;
+  --hi:#c62f33; --med:#b45309; --lo:#0f8a5f;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{ color-scheme:dark; }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;line-height:1.2;text-wrap:balance}
+p{margin:0}
+code{font-family:var(--mono);font-size:.86em}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:26px 56px}
+
+.top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--manage);font-weight:600}
+h1{font-size:clamp(23px,3.2vw,32px);letter-spacing:-.02em;font-weight:700;margin-top:6px}
+.lead{color:var(--ink-soft);max-width:74ch;margin-top:9px;font-size:15.5px}
+.theme-btn{margin-left:auto;background:var(--raise);border:1px solid var(--line-strong);color:var(--ink-soft);font-family:var(--mono);font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer}
+
+.sys{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--map);border-radius:0 12px 12px 0;padding:15px 18px}
+.sys h3{font-size:12px;font-family:var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--map);margin-bottom:8px}
+.sys p{color:var(--ink-soft);font-size:14px}
+.sys b{color:var(--ink)}
+
+.lifelegend{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--ink-faint);font-family:var(--mono)}
+.lifelegend .step{background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:4px 9px;white-space:nowrap}
+.lifelegend .arw{color:var(--ink-faint)}
+
+.section-t{margin-top:26px;font-size:13px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+
+/* matrix */
+.mscroll{margin-top:12px;overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:860px}
+thead th{position:sticky;top:0;background:var(--panel-2);text-align:left;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;padding:11px 13px;border-bottom:1px solid var(--line-strong)}
+thead th.g{color:var(--govern)} thead th.m{color:var(--map)} thead th.ms{color:var(--measure)} thead th.mg{color:var(--manage)}
+tbody td{padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-soft);line-height:1.45}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--panel-2)}
+tbody tr.sel{background:var(--raise)}
+tbody tr:last-child td{border-bottom:none}
+.rname{min-width:168px}
+.rname .nm{font-weight:600;color:var(--ink);font-size:13.5px;display:flex;align-items:center;gap:7px}
+.rname .tr{font-family:var(--mono);font-size:10px;margin-top:4px;display:inline-block;padding:2px 6px;border-radius:4px}
+.cell{font-size:12.5px}
+.rate{display:flex;gap:6px;align-items:center}
+.pill{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:5px;white-space:nowrap}
+.pill.hi{color:#fff;background:var(--hi)} .pill.med{color:#fff;background:var(--med)} .pill.lo{color:#fff;background:var(--lo)}
+.arrow{color:var(--ink-faint);font-size:11px}
+.exp{color:var(--ink-faint);font-size:11px;font-family:var(--mono)}
+
+/* trait colour tints */
+.t-safe{color:var(--map);background:rgba(79,140,255,.13)}
+.t-fair{color:var(--manage);background:rgba(240,169,59,.13)}
+.t-sec{color:var(--hi);background:rgba(240,86,90,.13)}
+.t-priv{color:var(--govern);background:rgba(167,139,250,.13)}
+.t-xai{color:var(--measure);background:rgba(45,212,191,.13)}
+.t-acct{color:var(--ink-soft);background:rgba(120,140,160,.15)}
+.t-rel{color:var(--map);background:rgba(79,140,255,.13)}
+.t-soc{color:#e06ca8;background:rgba(224,108,168,.14)}
+
+/* detail drawer */
+.detail{margin-top:18px;background:var(--panel);border:1px solid var(--line-strong);border-radius:14px;overflow:hidden}
+.d-head{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel-2)}
+.d-head h3{font-size:17px;font-weight:700}
+.d-head .tr{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:5px}
+.d-head .rates{margin-left:auto;display:flex;gap:7px;align-items:center}
+.d-ethics{padding:12px 18px;font-size:13.5px;color:var(--ink-soft);border-bottom:1px solid var(--line);background:rgba(240,169,59,.05)}
+.d-ethics b{color:var(--manage)}
+.life{padding:10px 14px}
+.lstep{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:12px 6px;border-bottom:1px solid var(--line);align-items:start}
+.lstep:last-child{border-bottom:none}
+@media (max-width:620px){.lstep{grid-template-columns:1fr;gap:4px}}
+.lstep .ls-l{display:flex;flex-direction:column;gap:4px}
+.lstep .ls-name{font-weight:600;font-size:13.5px}
+.lstep .ls-fn{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:5px;align-self:flex-start}
+.fn-g{color:var(--govern);background:rgba(167,139,250,.13)} .fn-m{color:var(--map);background:rgba(79,140,255,.13)}
+.fn-ms{color:var(--measure);background:rgba(45,212,191,.13)} .fn-mg{color:var(--manage);background:rgba(240,169,59,.13)}
+.lstep .ls-v{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+.lstep .ls-ref{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);margin-top:3px}
+
+/* crosswalk */
+.xt td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
+.xt .kk{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)}
+.framing{margin-top:12px;font-size:13px;color:var(--ink-soft);line-height:1.6;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 16px}
+.framing b{color:var(--ink)}
+
+/* implication cards */
+.imp{margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:860px){.imp{grid-template-columns:1fr}}
+.icard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:17px 18px;display:flex;flex-direction:column;gap:10px}
+.icard.euai{border-top:3px solid var(--hi)}
+.icard.oecd{border-top:3px solid var(--measure)}
+.icard.iso{border-top:3px solid var(--govern)}
+.icard h4{font-size:15px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.icard .badge{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:5px}
+.euai .badge{color:#fff;background:var(--hi)} .oecd .badge{color:#fff;background:var(--measure)} .iso .badge{color:#fff;background:var(--govern)}
+.icard .intro{font-size:13px;color:var(--ink-soft)}
+.icard ul{margin:0;padding-left:17px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--ink-soft)}
+.icard li b{color:var(--ink)}
+.icard .tail{font-size:12px;color:var(--ink-faint);font-style:italic;margin-top:2px}
+
+.appnote{margin-top:26px;background:var(--panel);border:1px dashed var(--line-strong);border-radius:12px;padding:18px 20px}
+.appnote h3{font-size:14px;margin-bottom:8px}
+.appnote p{color:var(--ink-soft);font-size:13.5px}
+.appnote b{color:var(--ink)}
+.foot{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-faint);line-height:1.6}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <span class="eyebrow">NIST AI RMF · ISO 31000 · Trustworthy AI</span>
+      <h1>AI Risk Lifecycle Navigator</h1>
+      <p class="lead">Every AI risk category — safety, bias, information security, privacy, explainability, accountability,
+        human and societal impact — traced across the NIST GMMM functions and the ISO 31000 risk process, worked through
+        one system. Click any risk to open its full lifecycle.</p>
+    </div>
+    <button class="theme-btn" id="theme">◐ theme</button>
+  </div>
+
+  <div class="sys">
+    <h3>System under assessment</h3>
+    <p><b>CancerDetect AI</b> — a clinical decision-support model that reads patient data and imaging to flag likely
+      malignancy. Decision support, not autonomous diagnosis; a clinician reviews every output. Handles sensitive PHI;
+      subject to PHIPA / HIPAA.</p>
+  </div>
+
+  <div class="lifelegend">
+    <span>ISO 31000 lifecycle:</span>
+    <span class="step">Identify</span><span class="arw">→</span>
+    <span class="step">Analyse</span><span class="arw">→</span>
+    <span class="step">Evaluate</span><span class="arw">→</span>
+    <span class="step">Treat</span><span class="arw">→</span>
+    <span class="step">Residual</span>
+    <span class="arw">· mapped to →</span>
+    <span class="step" style="color:var(--map)">Map</span>
+    <span class="step" style="color:var(--measure)">Measure</span>
+    <span class="step" style="color:var(--manage)">Manage</span>
+    <span class="step" style="color:var(--govern)">Govern (accepts)</span>
+  </div>
+
+  <div class="section-t">The risk matrix — all categories × NIST functions</div>
+  <div class="mscroll">
+    <table>
+      <thead><tr>
+        <th class="rname">Risk category</th>
+        <th class="g">Govern — set</th>
+        <th class="m">Map — identify &amp; rate</th>
+        <th class="ms">Measure — analyse</th>
+        <th class="mg">Manage — treat</th>
+        <th>Inherent → Residual</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="section-t">Full lifecycle — <span id="selName" style="color:var(--ink)"></span></div>
+  <div class="detail" id="detail"></div>
+
+  <div class="section-t">Framework crosswalk — the same lifecycle, five frameworks</div>
+  <div class="framing">
+    <b>ISO 31000</b> is the parent risk process; <b>ISO/IEC 27005</b> applies it to information security;
+    <b>NIST AI RMF</b> and <b>ISO/IEC 42001</b> apply it to AI (a framework vs a certifiable management system);
+    <b>NIST CSF 2.0</b> is the cybersecurity backbone whose new <b>GOVERN</b> function carries risk appetite (GV.RM)
+    and whose Identify/Protect/Detect/Respond/Recover functions run the operational security lifecycle beside the AI lens;
+    <b>NIST SP 800-37 / 800-30</b> is the classic federal system-risk version; the <b>EU AI Act</b> turns much of it
+    into law for high-risk AI, and the <b>OECD AI Principles</b> are the values beneath all of it.
+  </div>
+  <div class="mscroll" style="margin-top:12px">
+    <table class="xt">
+      <thead><tr>
+        <th>Lifecycle stage</th>
+        <th>ISO 31000</th>
+        <th>ISO/IEC 27005</th>
+        <th>NIST AI RMF</th>
+        <th>NIST CSF 2.0</th>
+        <th>NIST SP 800-37 / 800-30</th>
+        <th>ISO/IEC 42001</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Establish context</td><td class="kk">Context establishment</td><td class="kk">Context establishment</td><td class="kk">Govern + Map 1</td><td class="kk">GOVERN · GV.OC context</td><td class="kk">Prepare · Categorize</td><td class="kk">Cl.4 context · 5 leadership · 6.1</td></tr>
+        <tr><td>Risk identification</td><td class="kk">Risk identification</td><td class="kk">Risk identification</td><td class="kk">Map 4, 5</td><td class="kk">IDENTIFY · ID.AM inventory · ID.RA</td><td class="kk">800-30: identify sources, events, vulns</td><td class="kk">6.1.2 + AI impact assessment</td></tr>
+        <tr><td>Risk analysis</td><td class="kk">Risk analysis</td><td class="kk">Likelihood × consequence</td><td class="kk">Map 5.1 + Measure</td><td class="kk">ID.RA risk assessment</td><td class="kk">800-30: determine likelihood, impact</td><td class="kk">6.1.2 analyse</td></tr>
+        <tr><td>Risk evaluation</td><td class="kk">Risk evaluation</td><td class="kk">Compare to criteria</td><td class="kk">Manage 1 vs Govern 1.3</td><td class="kk">GV.RM risk appetite &amp; tolerance</td><td class="kk">800-30 prioritise · 800-37 Select</td><td class="kk">6.1.2 evaluate</td></tr>
+        <tr><td>Risk treatment</td><td class="kk">Risk treatment</td><td class="kk">Treat (4 options)</td><td class="kk">Manage 2</td><td class="kk">PROTECT · PR.AA/DS/PS controls</td><td class="kk">800-37 Implement + Assess</td><td class="kk">6.1.3 + Annex A controls</td></tr>
+        <tr><td>Acceptance / authorise</td><td class="kk">(accept)</td><td class="kk">Risk acceptance</td><td class="kk">Govern accepts residual</td><td class="kk">GV.OV oversight · GV.RM</td><td class="kk">800-37 Authorize (ATO)</td><td class="kk">Cl.9 mgmt review</td></tr>
+        <tr><td>Monitor &amp; review</td><td class="kk">Monitoring &amp; review</td><td class="kk">Monitoring &amp; review</td><td class="kk">Measure 3 + Manage 4</td><td class="kk">DETECT · DE.CM continuous monitoring</td><td class="kk">800-37 Monitor</td><td class="kk">Cl.9 perf eval · 10 improve</td></tr>
+        <tr><td>Incident &amp; recovery</td><td class="kk">(treatment / review)</td><td class="kk">Incident handling</td><td class="kk">Manage 4</td><td class="kk">RESPOND (RS) · RECOVER (RC)</td><td class="kk">800-61 IR</td><td class="kk">Cl.10 improvement</td></tr>
+        <tr><td>Communicate &amp; consult</td><td class="kk">Cross-cutting</td><td class="kk">Cross-cutting</td><td class="kk">Govern 5</td><td class="kk">GV.RR roles · GV.OV</td><td class="kk">Ongoing</td><td class="kk">Cl.7 support</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-t">Regulatory &amp; standards implications — CancerDetect</div>
+  <div class="imp">
+    <div class="icard euai">
+      <h4>EU AI Act <span class="badge">High-risk</span></h4>
+      <p class="intro">Used as a medical device, CancerDetect is <b>high-risk</b>, triggering the full regime:</p>
+      <ul>
+        <li><b>Art. 9</b> risk-management system — continuous &amp; iterative (this whole lifecycle)</li>
+        <li><b>Art. 10</b> data governance &amp; bias control</li>
+        <li><b>Art. 11–12</b> technical documentation &amp; automatic logging</li>
+        <li><b>Art. 13</b> transparency / instructions to clinicians</li>
+        <li><b>Art. 14</b> human oversight (the human-in-loop control)</li>
+        <li><b>Art. 15</b> accuracy, robustness &amp; cybersecurity</li>
+      </ul>
+      <p class="tail">Conformity assessment + CE marking, and post-market monitoring (the drift row).</p>
+    </div>
+    <div class="icard oecd">
+      <h4>OECD AI Principles <span class="badge">Principles</span></h4>
+      <p class="intro">Five values-based principles that underpin the EU AI Act and most national AI policy:</p>
+      <ul>
+        <li>Inclusive growth, well-being</li>
+        <li><b>Human-centred values &amp; fairness</b> → bias, societal rows</li>
+        <li><b>Transparency &amp; explainability</b> → XAI row</li>
+        <li><b>Robustness, security &amp; safety</b> → safety, infosec, reliability</li>
+        <li><b>Accountability</b> → accountability row</li>
+      </ul>
+      <p class="tail">Not law, but the shared vocabulary regulators build on.</p>
+    </div>
+    <div class="icard iso">
+      <h4>ISO/IEC 42001 <span class="badge">Certifiable AIMS</span></h4>
+      <p class="intro">The management-system wrapper — how you run all of the above, repeatably (Plan-Do-Check-Act):</p>
+      <ul>
+        <li><b>Cl. 6.1</b> AI risk assessment &amp; treatment (this navigator <i>is</i> that process)</li>
+        <li>AI system <b>impact assessment</b> (Annex A) → the Map / impact rows</li>
+        <li><b>Annex A</b> controls — lifecycle, data, third-party, transparency</li>
+        <li><b>Cl. 9–10</b> performance evaluation &amp; continual improvement → monitoring</li>
+      </ul>
+      <p class="tail">Certification demonstrates governance to regulators and clients; complements, not replaces, NIST AI RMF.</p>
+    </div>
+  </div>
+
+  <div class="appnote">
+    <h3>Turning this into an application</h3>
+    <p>This is the data model for a real tool. Each risk is an object with its NIST references, inherent and residual
+      ratings, trustworthiness trait, ethics lens, and a control per lifecycle stage. A working app would let an
+      assessor <b>add a system, select applicable risks, record evidence and ratings, attach controls, and export a
+      risk register</b> — exactly the finding format already built into the LLM Top 10 Lab. It slots directly beside
+      the <code>security-assessment-framework</code> and the GRC risk-consolidator toolkit.</p>
+  </div>
+
+  <div class="foot">
+    Worked example for education and framework teaching. Framework references (NIST AI RMF 1.0, NIST SP 800-37 Rev 2 /
+    800-30, ISO 31000, ISO/IEC 27005, ISO/IEC 42001) and EU AI Act article numbers are paraphrased and mapped at a
+    conceptual level — verify exact clause and article numbers against the source documents before formal use.
+    Trustworthiness characteristics follow NIST AI RMF: valid &amp; reliable, safe, secure &amp; resilient, accountable
+    &amp; transparent, explainable &amp; interpretable, privacy-enhanced, and fair with harmful bias managed.
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var esc=function(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;};
+
+  var RISKS=[
+    { id:"safety", name:"Clinical safety", trait:"Safe · Valid", tc:"t-safe",
+      inh:"High", res:"Medium", ethics:"Non-maleficence — a false negative delays a cancer diagnosis and causes direct patient harm. This is the risk that drives the High rating.",
+      govern:"Mandate human-in-the-loop; set an acceptable false-negative bar; name a clinical accountable owner.",
+      identify:{fn:"Map", cls:"fn-m", ref:"MAP 1, M2", t:"Identify that a false negative (missed malignancy) is a credible, high-consequence failure of a diagnostic-support system."},
+      analyse:{fn:"Map 5.1 + Measure", cls:"fn-ms", ref:"MAP 5.1, MS2", t:"Rate it: likelihood moderate × magnitude catastrophic = inherent High. Quantify with sensitivity, specificity and FN rate from a clinical validation study."},
+      evaluate:{fn:"Manage + Govern", cls:"fn-mg", ref:"MG1, G1.3", t:"FN risk exceeds the clinically agreed tolerance → must be treated; prioritised as top clinical risk."},
+      treat:{fn:"Manage", cls:"fn-mg", ref:"MG2", t:"Clinician reviews every output; low-confidence cases auto-escalate to a specialist; confidence thresholds; model card."},
+      residual:{fn:"Manage → Govern", cls:"fn-g", ref:"MG4, G1.3", t:"With mandatory human oversight, residual ≈ Medium. Clinical governance board accepts only if within tolerance."} },
+
+    { id:"bias", name:"Bias & fairness", trait:"Fair — bias managed", tc:"t-fair",
+      inh:"High", res:"Medium", ethics:"Justice / equity — if the model underperforms for one demographic, the harm of missed diagnoses is distributed unequally across groups.",
+      govern:"Policy requiring representative training data and subgroup performance reporting before deployment.",
+      identify:{fn:"Map", cls:"fn-m", ref:"MAP 5", t:"Identify potential disparate performance across sex, ethnicity and age groups."},
+      analyse:{fn:"Measure", cls:"fn-ms", ref:"MS2", t:"Measure accuracy and FN rate per subgroup; test for statistically significant performance gaps."},
+      evaluate:{fn:"Manage + Govern", cls:"fn-mg", ref:"MG1, G1.3", t:"A material subgroup gap breaches the fairness criterion → treat before deployment."},
+      treat:{fn:"Manage", cls:"fn-mg", ref:"MG2", t:"Rebalance/augment data, apply bias-mitigation, re-test subgroups, set per-group monitoring."},
+      residual:{fn:"Manage → Govern", cls:"fn-g", ref:"MG4", t:"Residual Medium — gaps narrowed but monitored continuously; accepted against the fairness threshold."} },
+
+    { id:"infosec", name:"Information security", trait:"Secure & resilient", tc:"t-sec",
+      inh:"High", res:"Low", ethics:"Confidentiality and duty of care — unauthorised disclosure of PHI breaches patient trust and the law.",
+      govern:"Information-security policy, access governance, encryption and logging standards for PHI systems.",
+      identify:{fn:"Map", cls:"fn-m", ref:"MAP 4", t:"Identify unauthorised disclosure or exfiltration of PHI — via model output, logs, over-broad access, or an exposed API."},
+      analyse:{fn:"Measure", cls:"fn-ms", ref:"MS2", t:"Penetration test, access-control testing, output-handling review (prompt injection / LLM05), adversarial robustness."},
+      evaluate:{fn:"Manage + Govern", cls:"fn-mg", ref:"MG1, G1.3", t:"Confidentiality tolerance is very low and breach is regulated → top-priority treatment."},
+      treat:{fn:"Manage", cls:"fn-mg", ref:"MG2", t:"Encryption at rest/in transit, RBAC / least privilege, PHI redaction before the model, output filtering, DLP, audit logging."},
+      residual:{fn:"Manage → Govern", cls:"fn-g", ref:"MG4", t:"Residual Low once layered controls are in place and monitored; accepted by the privacy/security authority."} },
+
+    { id:"privacy", name:"Privacy", trait:"Privacy-enhanced", tc:"t-priv",
+      inh:"High", res:"Low", ethics:"Autonomy and privacy — patients must consent to data use; secondary use and re-identification undermine both.",
+      govern:"PHIPA/HIPAA policy, lawful basis and consent, mandatory DPIA, data-minimisation standard.",
+      identify:{fn:"Map", cls:"fn-m", ref:"MAP 5", t:"Identify re-identification risk, secondary-use and consent-scope risks in the data flow."},
+      analyse:{fn:"Measure", cls:"fn-ms", ref:"MS2", t:"Re-identification risk assessment; check what PII reaches the model and what is retained."},
+      evaluate:{fn:"Manage + Govern", cls:"fn-mg", ref:"MG1, G1.3", t:"Any identifiable PHI reaching the model beyond consent exceeds tolerance → treat."},
+      treat:{fn:"Manage", cls:"fn-mg", ref:"MG2", t:"De-identification, PHI/SIN redaction before model invocation, data minimisation, retention limits, consent enforcement."},
+      residual:{fn:"Manage → Govern", cls:"fn-g", ref:"MG4", t:"Residual Low with redaction and minimisation; accepted against privacy law and the DPIA."} },
+
+    { id:"xai", name:"Explainability (XAI)", trait:"Explainable", tc:"t-xai",
+      inh:"High", res:"Medium", ethics:"Transparency — a clinician cannot be accountable for, or safely act on, a black-box prediction. Explainability is what makes the human-in-loop control real, not a rubber stamp.",
+      govern:"Require a usable explanation for every clinical AI output; no opaque autonomous decisions.",
+      identify:{fn:"Map", cls:"fn-m", ref:"MAP 3, M5", t:"Identify that opacity prevents clinician trust, informed action and accountability."},
+      analyse:{fn:"Measure", cls:"fn-ms", ref:"MS2", t:"Apply and evaluate XAI methods — SHAP / saliency maps — and test explanation fidelity and usefulness to clinicians."},
+      evaluate:{fn:"Manage + Govern", cls:"fn-mg", ref:"MG1", t:"Without actionable explanations the human-in-loop control is ineffective → treat."},
+      treat:{fn:"Manage", cls:"fn-mg", ref:"MG2", t:"Show a saliency/feature explanation with each output; train clinicians to interpret it; record it in the model card."},
+      residual:{fn:"Manage → Govern", cls:"fn-g", ref:"MG4", t:"Residual Medium — explanations are approximations, so clinical judgement remains the backstop."} },
+
+    { id:"acct", name:"Accountability & transparency", trait:"Accountable", tc:"t-acct",
+      inh:"Medium", res:"Low", ethics:"Responsibility — someone must own the outcome of a wrong prediction; unclear liability is itself a harm.",
+      govern:"Named accountable owner, RACI, audit-trail requirement, model and system cards (GOVERN 2).",
+      identify:{fn:"Map", cls:"fn-m", ref:"MAP 1", t:"Identify unclear liability and traceability for an incorrect or contested prediction."},
+      analyse:{fn:"Measure", cls:"fn-ms", ref:"MS3", t:"Check completeness of logging and decision traceability; can every output be reconstructed and attributed?"},
+      evaluate:{fn:"Manage + Govern", cls:"fn-mg", ref:"MG1, G2", t:"Gaps in traceability or ownership breach governance requirements → treat."},
+      treat:{fn:"Manage", cls:"fn-mg", ref:"MG4", t:"Immutable audit logs, model card, defined owner, incident-response and escalation process."},
+      residual:{fn:"Manage → Govern", cls:"fn-g", ref:"MG4", t:"Residual Low with full logging and clear ownership in place."} },
+
+    { id:"reliability", name:"Reliability & drift", trait:"Valid & reliable", tc:"t-rel",
+      inh:"Medium", res:"Medium", ethics:"Sustained non-maleficence — a model that was safe at launch can decay and start harming patients silently.",
+      govern:"Revalidation cadence and performance-threshold policy; retraining and rollback authority.",
+      identify:{fn:"Map", cls:"fn-m", ref:"MAP 4", t:"Identify drift risk from changing patient populations, new scanners or data-pipeline changes."},
+      analyse:{fn:"Measure", cls:"fn-ms", ref:"MS3", t:"Define drift metrics and track performance over time against the launch baseline."},
+      evaluate:{fn:"Manage + Govern", cls:"fn-mg", ref:"MG1, G1.3", t:"Performance falling below the agreed threshold breaches tolerance → act."},
+      treat:{fn:"Manage", cls:"fn-mg", ref:"MG4", t:"Retraining triggers, rollback plan, continuous post-deployment monitoring, periodic revalidation."},
+      residual:{fn:"Manage → Govern", cls:"fn-g", ref:"MG4", t:"Residual Medium — drift is ongoing; the control is vigilance, not a one-time fix."} },
+
+    { id:"societal", name:"Human & societal impact", trait:"Safe · Fair · Accountable", tc:"t-soc",
+      inh:"Medium", res:"Medium", ethics:"Autonomy, justice and beneficence — over-reliance (automation bias), unequal access to the tool, and broader effects on care pathways and the clinician's role.",
+      govern:"Policy on appropriate use, human oversight and equitable access; avoid de-skilling.",
+      identify:{fn:"Map", cls:"fn-m", ref:"MAP 5", t:"Identify automation bias / over-reliance, inequitable access, and knock-on effects on clinicians and patients."},
+      analyse:{fn:"Measure", cls:"fn-ms", ref:"MS2", t:"Human-factors and automation-bias testing; assess who gains or loses access to the tool."},
+      evaluate:{fn:"Manage + Govern", cls:"fn-mg", ref:"MG1", t:"Evidence of harmful over-reliance or inequity breaches the responsible-use policy → treat."},
+      treat:{fn:"Manage", cls:"fn-mg", ref:"MG2", t:"Enforce human-in-loop, train against over-reliance, monitor real-world usage, review access equity."},
+      residual:{fn:"Manage → Govern", cls:"fn-g", ref:"MG4", t:"Residual Medium — societal effects are diffuse and need ongoing review, not a single control."} }
+  ];
+
+  function pills(inh,res){
+    var c=function(v){return v==="High"?"hi":v==="Medium"?"med":"lo";};
+    return '<span class="rate"><span class="pill '+c(inh)+'">'+inh+'</span><span class="arrow">→</span><span class="pill '+c(res)+'">'+res+'</span></span>';
+  }
+
+  var sel="safety";
+  function renderRows(){
+    var tb=document.getElementById("rows");tb.innerHTML="";
+    RISKS.forEach(function(r){
+      var tr=document.createElement("tr");
+      if(r.id===sel) tr.className="sel";
+      tr.innerHTML=
+        '<td class="rname"><div class="nm">'+esc(r.name)+'</div><span class="tr '+r.tc+'">'+esc(r.trait)+'</span></td>'+
+        '<td class="cell">'+esc(r.govern)+'</td>'+
+        '<td class="cell">'+esc(r.identify.t.split(".")[0])+'.</td>'+
+        '<td class="cell">'+esc(r.analyse.t.split(".")[0])+'.</td>'+
+        '<td class="cell">'+esc(r.treat.t)+'</td>'+
+        '<td>'+pills(r.inh,r.res)+'<div class="exp">tap for lifecycle</div></td>';
+      tr.addEventListener("click",function(){sel=r.id;renderRows();renderDetail();
+        document.getElementById("detail").scrollIntoView({behavior:"smooth",block:"nearest"});});
+      tb.appendChild(tr);
+    });
+  }
+
+  function step(name,o){
+    return '<div class="lstep"><div class="ls-l"><span class="ls-name">'+name+'</span>'+
+      '<span class="ls-fn '+o.cls+'">'+esc(o.fn)+'</span><span class="ls-ref">'+esc(o.ref)+'</span></div>'+
+      '<div class="ls-v">'+esc(o.t)+'</div></div>';
+  }
+  function renderDetail(){
+    var r=RISKS.filter(function(x){return x.id===sel;})[0];
+    document.getElementById("selName").textContent=r.name;
+    document.getElementById("detail").innerHTML=
+      '<div class="d-head"><h3>'+esc(r.name)+'</h3><span class="tr '+r.tc+'">'+esc(r.trait)+'</span>'+
+        '<span class="rates">'+pills(r.inh,r.res)+'</span></div>'+
+      '<div class="d-ethics"><b>Ethics / RAI lens.</b> '+esc(r.ethics)+'</div>'+
+      '<div class="life">'+
+        step("Identify",r.identify)+
+        step("Analyse",r.analyse)+
+        step("Evaluate",r.evaluate)+
+        step("Treat",r.treat)+
+        step("Residual &amp; accept",r.residual)+
+      '</div>';
+  }
+
+  document.getElementById("theme").addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme",cur==="light"?"dark":"light");
+  });
+
+  renderRows();renderDetail();
+})();
+</script>

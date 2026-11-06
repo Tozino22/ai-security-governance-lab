@@ -1,0 +1,398 @@
+<title>AI Project Risk Advisor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
+
+<style>
+/* Layout: describe a project (or tick attributes) on the left; a live advisory
+   builds on the right — EU AI Act tier, applicable risks, frameworks, threat
+   models, and a pre-flight checklist. Rules engine, no network. Slate palette. */
+:root{
+  --bg:#0b0f16; --panel:#121823; --panel-2:#0d131d; --raise:#182230;
+  --ink:#e7eef7; --ink-soft:#9fb0c4; --ink-faint:#6d7f94;
+  --line:#1f2a38; --line-strong:#2d3c4f;
+  --govern:#a78bfa; --map:#4f8cff; --measure:#2dd4bf; --manage:#f0a93b;
+  --hi:#f0565a; --med:#f0a93b; --lo:#34d399; --crit:#b4232a;
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:light){ :root:not([data-theme="dark"]){
+  --bg:#eef2f7; --panel:#ffffff; --panel-2:#f7f9fc; --raise:#e9eef4;
+  --ink:#14202e; --ink-soft:#49596c; --ink-faint:#7b8a9c; --line:#e2e8f0; --line-strong:#cdd8e4;
+  --govern:#6d44c8; --map:#1d5fd0; --measure:#0d9488; --manage:#b45309;
+  --hi:#c62f33; --med:#b45309; --lo:#0f8a5f; --crit:#8c1419; color-scheme:light;
+}}
+:root[data-theme="light"]{
+  --bg:#eef2f7; --panel:#ffffff; --panel-2:#f7f9fc; --raise:#e9eef4;
+  --ink:#14202e; --ink-soft:#49596c; --ink-faint:#7b8a9c; --line:#e2e8f0; --line-strong:#cdd8e4;
+  --govern:#6d44c8; --map:#1d5fd0; --measure:#0d9488; --manage:#b45309;
+  --hi:#c62f33; --med:#b45309; --lo:#0f8a5f; --crit:#8c1419; color-scheme:light;
+}
+:root[data-theme="dark"]{ color-scheme:dark; }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;line-height:1.2;text-wrap:balance}
+p{margin:0}
+code{font-family:var(--mono);font-size:.86em}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:20px;padding-block:24px 56px}
+
+.top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:4px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--manage);font-weight:600}
+h1{font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;font-weight:700;margin-top:6px}
+.lead{color:var(--ink-soft);max-width:72ch;margin-top:8px;font-size:15px}
+.theme-btn{margin-left:auto;background:var(--raise);border:1px solid var(--line-strong);color:var(--ink-soft);font-family:var(--mono);font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer}
+
+.grid{display:grid;grid-template-columns:420px 1fr;gap:18px;margin-top:18px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 17px}
+.card h3{font-size:12px;font-family:var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:11px}
+.field label{font-size:11.5px;font-family:var(--mono);color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px}
+input[type=text],textarea{width:100%;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:8px;color:var(--ink);font-family:var(--sans);font-size:13.5px;padding:9px 11px}
+textarea{font-family:var(--mono);font-size:12px;min-height:70px;resize:vertical;line-height:1.5}
+input:focus,textarea:focus{outline:2px solid var(--map);outline-offset:1px}
+.row{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+.btn{background:var(--map);border:none;color:#fff;font-family:var(--sans);font-weight:600;font-size:13px;padding:9px 14px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:var(--raise);color:var(--ink);border:1px solid var(--line-strong)}
+.btn:hover{filter:brightness(1.08)}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.preset{background:var(--raise);border:1px solid var(--line-strong);color:var(--ink-soft);font-size:11.5px;padding:5px 9px;border-radius:6px;cursor:pointer;font-family:var(--sans)}
+.preset:hover{border-color:var(--map);color:var(--map)}
+
+.attrs{margin-top:16px}
+.agrp{margin-top:12px}
+.agrp .gl{font-size:10.5px;font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+.chk{display:flex;gap:9px;align-items:flex-start;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--ink-soft)}
+.chk:hover{background:var(--panel-2)}
+.chk input{margin-top:2px;flex:none;width:15px;height:15px;accent-color:var(--map)}
+.chk.on{color:var(--ink)}
+
+/* advisory output */
+.adv{display:flex;flex-direction:column;gap:14px}
+.tier{border-radius:12px;padding:16px 18px;border:1px solid}
+.tier .tl{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.9}
+.tier h2{font-size:22px;font-weight:800;margin:3px 0 6px;letter-spacing:-.01em}
+.tier p{font-size:13.5px;line-height:1.5}
+.tier.crit{background:rgba(180,35,42,.12);border-color:var(--crit)} .tier.crit h2{color:var(--crit)}
+.tier.hi{background:rgba(240,86,90,.1);border-color:var(--hi)} .tier.hi h2{color:var(--hi)}
+.tier.med{background:rgba(240,169,59,.1);border-color:var(--med)} .tier.med h2{color:var(--med)}
+.tier.lo{background:rgba(52,211,153,.1);border-color:var(--lo)} .tier.lo h2{color:var(--lo)}
+
+.block{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+.block > h3{font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.block > h3 .ct{margin-left:auto;font-size:11px;color:var(--ink-faint)}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-size:12px;padding:5px 10px;border-radius:7px;background:var(--raise);border:1px solid var(--line-strong);color:var(--ink-soft)}
+.chip b{color:var(--ink)}
+
+.rlist{display:flex;flex-direction:column;gap:8px}
+.ritem{display:grid;grid-template-columns:150px 1fr;gap:12px;font-size:13px;align-items:baseline}
+@media (max-width:520px){.ritem{grid-template-columns:1fr;gap:2px}}
+.ritem .rn{font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px}
+.ritem .rp{font-family:var(--mono);font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:4px;color:#fff}
+.rp.hi{background:var(--hi)} .rp.med{background:var(--med)} .rp.lo{background:var(--lo)}
+.ritem .rw{color:var(--ink-soft);font-size:12.5px}
+.ritem .rw .ref{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint)}
+.rap-line{margin-top:5px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.rap{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--raise);border:1px solid var(--line-strong);color:var(--ink-soft);white-space:nowrap}
+.rap.zero{color:#fff;background:var(--hi);border-color:var(--hi)}
+.raptol{font-size:11.5px;color:var(--ink-faint)}
+
+.tm{display:flex;flex-direction:column;gap:10px}
+.tmc{border:1px solid var(--line);border-radius:10px;padding:12px 14px;border-left:3px solid var(--measure)}
+.tmc.owasp{border-left-color:var(--hi)} .tmc.atlas{border-left-color:var(--manage)} .tmc.maestro{border-left-color:var(--govern)}
+.tmc h4{font-size:13.5px;display:flex;align-items:center;gap:8px}
+.tmc .tag{font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:4px;color:#fff}
+.owasp .tag{background:var(--hi)} .atlas .tag{background:var(--manage)} .maestro .tag{background:var(--govern)}
+.tmc p{font-size:12.5px;color:var(--ink-soft);margin-top:5px}
+.tm-none{font-size:12.5px;color:var(--ink-faint);font-style:italic}
+
+.chklist{display:flex;flex-direction:column;gap:9px}
+.ck{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-soft);line-height:1.5}
+.ck .n{font-family:var(--mono);font-size:11px;color:var(--map);font-weight:600;flex:none;margin-top:1px}
+.ck.stop{color:var(--hi);font-weight:600}
+.ck.stop .n{color:var(--hi)}
+.ck b{color:var(--ink)}
+
+.export{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.copybtn{background:var(--raise);border:1px solid var(--line-strong);color:var(--ink);font-family:var(--sans);font-size:13px;font-weight:600;padding:9px 15px;border-radius:8px;cursor:pointer}
+.copybtn:hover{border-color:var(--map);color:var(--map)}
+.export .en{font-size:11.5px;color:var(--ink-faint)}
+
+.foot{margin-top:24px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-faint);line-height:1.6}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <span class="eyebrow">EU AI Act · NIST AI RMF · ISO 42001 · OWASP LLM · MITRE ATLAS · MAESTRO</span>
+      <h1>AI Project Risk Advisor</h1>
+      <p class="lead">Describe any AI project — or tick what it does — and get its EU AI Act risk tier, the risks and
+        frameworks that apply, the threat models to use, and what to settle before you build. Works on projects no one
+        has seen before, because it classifies by <em>attributes</em>, not by name.</p>
+    </div>
+    <button class="theme-btn" id="theme">◐ theme</button>
+  </div>
+
+  <div class="grid">
+    <!-- INPUT -->
+    <div>
+      <div class="card">
+        <h3>1 · Describe the project</h3>
+        <div class="field"><label>Project name</label><input type="text" id="pname" placeholder="e.g. Clinic triage assistant" value="My AI project"></div>
+        <div class="field" style="margin-top:10px"><label>What does it do? (optional)</label>
+          <textarea id="pdesc" placeholder="e.g. An assistant that reads patient notes and suggests a likely diagnosis for a clinician to review."></textarea></div>
+        <div class="row"><button class="btn" id="analyse">⚙ Infer attributes from description</button></div>
+        <div class="presets" id="presets"></div>
+      </div>
+
+      <div class="card attrs">
+        <h3>2 · Confirm the attributes</h3>
+        <div id="attrBox"></div>
+      </div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div class="adv" id="adv"></div>
+  </div>
+
+  <div class="foot">
+    Rules-based guidance to <b>start</b> an assessment, not a completed one or legal advice. EU AI Act tiers and
+    framework references are mapped conceptually — verify article and clause numbers against the source before formal
+    use. The advisor never leaves your browser.
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var esc=function(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML;};
+  var $=function(id){return document.getElementById(id);};
+
+  // ---- attributes ----
+  var ATTRS=[
+    {id:"pii",g:"Data & people",l:"Processes personal data (names, contact, accounts)"},
+    {id:"sensitive",g:"Data & people",l:"Processes sensitive data (health, biometric, SIN, children)"},
+    {id:"decisions",g:"Data & people",l:"Makes or informs decisions about people"},
+    {id:"publicFacing",g:"Data & people",l:"Public-facing, or affects many / vulnerable people"},
+    {id:"regulated",g:"Domain & impact",l:"Operates in a regulated/safety domain (health, finance, employment, education, law enforcement…)"},
+    {id:"physicalOrRights",g:"Domain & impact",l:"A failure could cause physical harm, major loss, or a rights impact"},
+    {id:"autonomous",g:"Domain & impact",l:"Acts autonomously (no human review of each decision)"},
+    {id:"prohibited",g:"Domain & impact",l:"May involve a prohibited practice (social scoring, mass biometric surveillance, manipulation)"},
+    {id:"ml",g:"Technology",l:"Uses a machine-learning model (prediction / classification)"},
+    {id:"llm",g:"Technology",l:"Uses an LLM / generative AI"},
+    {id:"agentic",g:"Technology",l:"Agentic / multi-agent (uses tools, takes actions)"}
+  ];
+  var state={}; ATTRS.forEach(function(a){state[a.id]=false;});
+
+  // ---- presets: configure ATTRIBUTES, not a lookup ----
+  var PRESETS={
+    "Restaurant ordering app":{pii:true,publicFacing:true,llm:true},
+    "Tax & bookkeeping app":{pii:true,sensitive:true,decisions:true,regulated:true,ml:true,llm:true},
+    "Stock research (multi-agent)":{llm:true,agentic:true,ml:true,publicFacing:true},
+    "CV / hiring screener":{pii:true,decisions:true,regulated:true,publicFacing:true,ml:true},
+    "Cancer-detection support":{sensitive:true,decisions:true,regulated:true,physicalOrRights:true,ml:true},
+    "Customer-support chatbot":{pii:true,publicFacing:true,llm:true}
+  };
+
+  // ---- keyword inference from free text ----
+  function infer(t){
+    t=(t||"").toLowerCase(); var s={};
+    var set=function(){for(var i=0;i<arguments.length;i++)s[arguments[i]]=true;};
+    if(/tax|invoice|account|financ|credit|loan|insuranc|bank|payroll/.test(t)) set("regulated","decisions","pii");
+    if(/health|medical|patient|clinic|diagnos|cancer|disease|triage/.test(t)) set("sensitive","regulated","decisions","physicalOrRights","ml");
+    if(/hir|recruit|\bcv\b|resume|candidate|employ|applicant/.test(t)) set("regulated","decisions","pii","ml");
+    if(/child|student|educat|exam|grad(e|ing)|school/.test(t)) set("regulated","sensitive","decisions");
+    if(/chat|assistant|support bot|customer service|copilot/.test(t)) set("llm","publicFacing");
+    if(/agent|multi-?agent|autonomous|orchestrat|tool use|takes action/.test(t)) set("agentic","llm");
+    if(/recommend|predict|classif|scor(e|ing)|detect|forecast|rank/.test(t)) set("ml","decisions");
+    if(/biometric|facial|face recogni|fingerprint|voice recogni/.test(t)) set("sensitive","regulated");
+    if(/social scor|mass surveillanc|manipulat|subliminal/.test(t)) set("prohibited");
+    if(/personal data|name|address|email|profile|account|user data/.test(t)) set("pii");
+    if(/restaurant|order|food|retail|e-?commerce|shop|booking|menu/.test(t)) set("publicFacing","pii");
+    if(/law enforce|police|migrat|border|justice|court/.test(t)) set("regulated","decisions","physicalOrRights");
+    if(/autonomous vehicle|robot|drone|industrial control|medical device/.test(t)) set("physicalOrRights","regulated","ml");
+    return s;
+  }
+
+  // ---- the engine ----
+  function tierOf(s){
+    if(s.prohibited) return "unacceptable";
+    if((s.regulated&&s.decisions)||s.physicalOrRights||(s.decisions&&s.sensitive)) return "high";
+    if(s.llm||s.agentic||s.publicFacing) return "limited";
+    return "minimal";
+  }
+  var TIERTXT={
+    unacceptable:{cls:"crit",name:"Unacceptable",tl:"EU AI Act tier",p:"This may be a prohibited practice. Do not build it. Stop and obtain legal review before any further work."},
+    high:{cls:"hi",name:"High-risk",tl:"EU AI Act tier",p:"The full high-risk regime applies: a risk-management system (Art. 9), data governance (Art. 10), technical documentation & logging (Art. 11–12), transparency (Art. 13), human oversight (Art. 14), accuracy/robustness/security (Art. 15), plus conformity assessment and CE marking."},
+    limited:{cls:"med",name:"Limited-risk",tl:"EU AI Act tier",p:"Transparency obligations apply — tell people they are interacting with AI and label AI-generated content. Run NIST AI RMF proportionately; no conformity assessment required."},
+    minimal:{cls:"lo",name:"Minimal-risk",tl:"EU AI Act tier",p:"No mandatory EU AI Act obligations. NIST AI RMF and basic governance remain good practice and are worth applying at a light touch."}
+  };
+
+  function frameworks(s,tier){
+    var f=[{k:"NIST AI RMF",w:"always — Govern, Map, Measure, Manage"},
+           {k:"NIST CSF 2.0",w:"cyber backbone — GOVERN (appetite), Identify, Protect, Detect, Respond, Recover"},
+           {k:"ISO/IEC 42001",w:"AI management system (stronger at higher tiers)"}];
+    if(tier==="high"||tier==="unacceptable") f.push({k:"EU AI Act",w:"legally binding obligations"});
+    else if(tier==="limited") f.push({k:"EU AI Act",w:"transparency duties"});
+    if(s.pii||s.sensitive){ f.push({k:"ISO/IEC 27001 / 27005",w:"information-security management & risk"});
+      f.push({k:"PIPEDA / Law 25 / GDPR",w:"privacy / data protection"}); }
+    f.push({k:"OECD AI Principles",w:"underlying values"});
+    return f;
+  }
+
+  var RISKDEFS={
+    safety:{n:"Safety / reliability of outcome",ref:"Map 5.1 · Measure · Manage",appetite:"Low",tol:"validated accuracy; error rate within approved bound; human oversight for high-impact"},
+    bias:{n:"Bias & fairness",ref:"Measure 2 · Manage",appetite:"Zero (discriminatory outcomes)",tol:"subgroup disparity ≤ 5%; bias tested pre-deployment"},
+    infosec:{n:"Information security",ref:"Map 4 · Measure · Manage",appetite:"Low",tol:"critical vulns ≤ 15 days; LLM apps pass OWASP LLM Top 10 review"},
+    privacy:{n:"Privacy",ref:"Map 5 · Measure · Manage",appetite:"Low · Zero for unlawful processing",tol:"PII/SIN redacted before the model; DPIA complete"},
+    xai:{n:"Explainability (XAI)",ref:"Measure 2 · Manage",appetite:"Low tolerance for opacity",tol:"explanation for every high-impact decision; users told AI is involved"},
+    acct:{n:"Accountability & transparency",ref:"Govern 2 · Manage 4",appetite:"Zero (ungoverned / shadow AI)",tol:"100% of use-cases inventoried; named owner; audit log"},
+    reliability:{n:"Reliability & drift",ref:"Measure 3 · Manage 4",appetite:"Medium",tol:"drift monitored; scheduled revalidation; rollback ready"},
+    societal:{n:"Human & societal impact",ref:"Map 5 · Manage",appetite:"Medium",tol:"ISO 42005 impact assessment for high-impact; over-reliance monitored"}
+  };
+  function risks(s,tier){
+    var hi=(tier==="high"||tier==="unacceptable"), r=[];
+    var add=function(id,sev,why){r.push({id:id,sev:sev,why:why});};
+    if(s.physicalOrRights||(s.regulated&&s.decisions)) add("safety",hi?"hi":"med","a wrong output causes real-world harm");
+    if(s.decisions||s.pii) add("bias",hi?"hi":"med","it affects people, so unequal performance is a harm");
+    add("infosec",s.sensitive?"hi":(s.pii||s.publicFacing?"med":"lo"),"every system is an attack surface");
+    if(s.pii||s.sensitive) add("privacy",s.sensitive?"hi":"med","it processes personal data");
+    if(s.decisions||s.regulated||hi) add("xai",hi?"hi":"med","people must understand and contest decisions");
+    if(s.ml||s.llm) add("acct","med","someone must own and trace each output");
+    if(s.ml||s.llm) add("reliability","med","model performance decays over time");
+    if(s.publicFacing||s.decisions||s.physicalOrRights) add("societal",hi?"med":"lo","over-reliance, access equity and wider effects");
+    return r;
+  }
+
+  function threatModels(s){
+    var t=[];
+    if(s.llm) t.push({cls:"owasp",tag:"GenAI",h:"OWASP Top 10 for LLM Applications",p:"Prompt injection, improper output handling, sensitive-information disclosure, excessive agency, system-prompt leakage. Use it to threat-model the LLM layer."});
+    if(s.ml||s.llm) t.push({cls:"atlas",tag:"Adversarial ML",h:"MITRE ATLAS",p:"Adversarial tactics and techniques against ML — evasion, poisoning, model extraction, inference attacks. Use it to threat-model the model itself."});
+    if(s.agentic) t.push({cls:"maestro",tag:"Agentic",h:"MAESTRO (CSA)",p:"Seven-layer threat model for agentic AI — tools, memory, orchestration, identity. Use it where the system plans and acts, not just answers."});
+    return t;
+  }
+
+  function checklist(s,tier){
+    var c=[];
+    if(tier==="unacceptable") c.push({stop:true,t:"STOP — this may be a prohibited practice under the EU AI Act. Do not proceed; obtain legal review first."});
+    c.push({t:"Register the system in your AI use-case inventory and name an accountable owner (NIST Govern · ISO 42001 Cl. 5)."});
+    c.push({t:"Run NIST AI RMF Map — document context, purpose, users and impacts before building."});
+    if(tier==="high") c.push({t:"<b>EU AI Act high-risk:</b> stand up an Art. 9 risk-management system, technical documentation (Art. 11), logging (Art. 12), human oversight (Art. 14); plan conformity assessment + CE marking."});
+    if(tier==="limited") c.push({t:"<b>Transparency:</b> disclose to users they are interacting with AI, and label AI-generated content (EU AI Act)."});
+    if(s.pii||s.sensitive) c.push({t:"Complete a DPIA; apply PII/SIN redaction, encryption and data minimisation (PIPEDA / Law 25 / GDPR · ISO 27005)."});
+    if(s.decisions) c.push({t:"Define fairness metrics and test subgroup performance before launch (bias)."});
+    if(s.decisions||s.regulated) c.push({t:"Provide explanations for outputs (XAI) and define the human-oversight points."});
+    if(s.llm) c.push({t:"Threat-model the LLM layer with the OWASP LLM Top 10 (prompt injection, output handling, excessive agency)."});
+    if(s.ml||s.llm) c.push({t:"Threat-model the model with MITRE ATLAS; plan drift monitoring and periodic revalidation."});
+    if(s.agentic) c.push({t:"Threat-model the agentic architecture with MAESTRO; constrain tool permissions to least privilege."});
+    if(s.autonomous) c.push({t:"Add human-in-the-loop or strong guardrails — autonomy raises both the tier and the blast radius."});
+    c.push({t:"Set your risk tolerance and a go/no-go decision owner, and define residual-risk acceptance (NIST Govern 1.3)."});
+    return c;
+  }
+
+  // ---- render ----
+  function renderAttrs(){
+    var box=$("attrBox"), html="", lastG="";
+    ATTRS.forEach(function(a){
+      if(a.g!==lastG){ if(lastG)html+="</div>"; html+='<div class="agrp"><div class="gl">'+a.g+'</div>'; lastG=a.g; }
+      html+='<label class="chk'+(state[a.id]?" on":"")+'"><input type="checkbox" data-a="'+a.id+'"'+(state[a.id]?" checked":"")+'><span>'+esc(a.l)+'</span></label>';
+    });
+    html+="</div>";
+    box.innerHTML=html;
+    box.querySelectorAll("input[data-a]").forEach(function(c){
+      c.addEventListener("change",function(){state[c.getAttribute("data-a")]=c.checked;renderAll();});
+    });
+  }
+
+  function renderAll(){
+    renderAttrs();
+    var s=state, tier=tierOf(s), tt=TIERTXT[tier];
+    var fw=frameworks(s,tier), rk=risks(s,tier), tm=threatModels(s), ck=checklist(s,tier);
+    var pct=function(v){return v==="hi"?"hi":v==="med"?"med":"lo";};
+
+    var h="";
+    h+='<div class="tier '+tt.cls+'"><div class="tl">'+tt.tl+'</div><h2>'+tt.name+'</h2><p>'+tt.p+'</p></div>';
+
+    h+='<div class="block"><h3>Frameworks that apply</h3><div class="chips">';
+    fw.forEach(function(f){h+='<span class="chip"><b>'+esc(f.k)+'</b> · '+esc(f.w)+'</span>';});
+    h+='</div></div>';
+
+    h+='<div class="block"><h3>Applicable risks &amp; suggested appetite <span class="ct">'+rk.length+' of 8</span></h3><div class="rlist">';
+    rk.forEach(function(r){var d=RISKDEFS[r.id];
+      h+='<div class="ritem"><div class="rn"><span class="rp '+pct(r.sev)+'">'+r.sev.toUpperCase()+'</span>'+esc(d.n)+'</div>'+
+         '<div class="rw">'+esc(r.why)+' · <span class="ref">'+esc(d.ref)+'</span>'+
+         '<div class="rap-line"><span class="rap '+(/^Zero/.test(d.appetite)?"zero":"")+'">Appetite: '+esc(d.appetite)+'</span>'+
+         '<span class="raptol">'+esc(d.tol)+'</span></div></div></div>';});
+    h+='</div></div>';
+
+    h+='<div class="block"><h3>Threat models to use</h3>';
+    if(tm.length){ h+='<div class="tm">';
+      tm.forEach(function(t){h+='<div class="tmc '+t.cls+'"><h4><span class="tag">'+t.tag+'</span>'+esc(t.h)+'</h4><p>'+esc(t.p)+'</p></div>';});
+      h+='</div>';
+    } else h+='<div class="tm-none">No AI-specific threat model triggered — this project does not (yet) use ML, an LLM, or agents. Standard application threat modelling still applies.</div>';
+    h+='</div>';
+
+    h+='<div class="block"><h3>Before you proceed</h3><div class="chklist">';
+    ck.forEach(function(x,i){h+='<div class="ck'+(x.stop?" stop":"")+'"><span class="n">'+(x.stop?"!":(i+1))+'</span><span>'+x.t+'</span></div>';});
+    h+='</div></div>';
+
+    h+='<div class="block"><div class="export"><button class="copybtn" id="copy">⧉ Copy the pre-flight brief</button>'+
+       '<span class="en">paste into your register, or share with the project owner</span></div></div>';
+
+    $("adv").innerHTML=h;
+    $("copy").addEventListener("click",copyBrief);
+  }
+
+  function copyBrief(){
+    var s=state, tier=tierOf(s), tt=TIERTXT[tier];
+    var name=$("pname").value||"AI project";
+    var lines=["AI PROJECT RISK BRIEF — "+name,"Date: "+new Date().toISOString().slice(0,10),
+      "","EU AI Act tier: "+tt.name,tt.p,"",
+      "Frameworks that apply:"];
+    frameworks(s,tier).forEach(function(f){lines.push("  - "+f.k+" ("+f.w+")");});
+    lines.push("","Applicable risks (with suggested appetite):");
+    risks(s,tier).forEach(function(r){var d=RISKDEFS[r.id];lines.push("  - ["+r.sev.toUpperCase()+"] "+d.n+" — "+r.why+"\n      Appetite: "+d.appetite+" | Tolerance: "+d.tol);});
+    var tm=threatModels(s);
+    lines.push("","Threat models:");
+    if(tm.length) tm.forEach(function(t){lines.push("  - "+t.h+" — "+t.p);}); else lines.push("  - none AI-specific; standard app threat modelling applies");
+    lines.push("","Before you proceed:");
+    checklist(s,tier).forEach(function(x,i){lines.push("  "+(x.stop?"! ":(i+1)+". ")+x.t.replace(/<[^>]+>/g,""));});
+    lines.push("","— Generated by the AI Project Risk Advisor. Guidance to start an assessment, not legal advice.");
+    var txt=lines.join("\n"), btn=$("copy"), o=btn.textContent, done=function(){btn.textContent="✓ Copied";setTimeout(function(){btn.textContent=o;},1500);};
+    var fb=function(){try{var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);done();}catch(e){}};
+    try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,fb);return;}}catch(e){}
+    fb();
+  }
+
+  // presets
+  var pc=$("presets");
+  Object.keys(PRESETS).forEach(function(name){
+    var b=document.createElement("button");b.className="preset";b.textContent=name;
+    b.addEventListener("click",function(){
+      ATTRS.forEach(function(a){state[a.id]=false;});
+      var p=PRESETS[name];Object.keys(p).forEach(function(k){state[k]=true;});
+      $("pname").value=name;renderAll();
+    });
+    pc.appendChild(b);
+  });
+
+  $("analyse").addEventListener("click",function(){
+    var inf=infer($("pdesc").value+" "+$("pname").value);
+    ATTRS.forEach(function(a){state[a.id]=!!inf[a.id];});
+    renderAll();
+  });
+  $("theme").addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme",cur==="light"?"dark":"light");
+  });
+
+  // start with a sensible example
+  state.pii=true;state.sensitive=true;state.decisions=true;state.regulated=true;state.physicalOrRights=true;state.ml=true;
+  $("pname").value="Cancer-detection support";
+  renderAll();
+})();
+</script>
