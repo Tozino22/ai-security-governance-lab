@@ -4,7 +4,7 @@ Three browser-based tools for assessing, governing and teaching the security of 
 LLM systems. Every tool is a **single self-contained HTML file** — no build step, no
 dependencies, no backend, no data leaves the browser.
 
-Built by **Tosin Aina** — CISSP, CISA, CRISC, ISO/IEC 27001 Lead Auditor, ISACA AAISM.
+Built by **Tosin Aina** — CISSP, CISA, CRISC, ISO/IEC 27001 Lead Auditor.
 
 ---
 
